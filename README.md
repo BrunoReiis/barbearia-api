@@ -31,6 +31,19 @@ PORT=3000
 
 `JWT_SECRET` deve ser uma chave longa e exclusiva em ambientes de produção.
 
+## Deploy na Vercel
+
+O entrypoint serverless está em `api/index.ts`. Para publicar pelo terminal:
+
+```bash
+npx vercel
+npx vercel --prod
+```
+
+Configure `DATABASE_URL` e `JWT_SECRET` nas Environment Variables do projeto na Vercel. O banco PostgreSQL precisa aceitar conexões externas; use uma URL com pooler quando o provedor oferecer essa opção.
+
+O arquivo `vercel.json` encaminha todas as requisições para o app Express, mantendo as rotas `/`, `/api/auth/*` e `/api/users/*`.
+
 ## Banco de dados
 
 Gere o cliente Prisma e aplique as migrations:
