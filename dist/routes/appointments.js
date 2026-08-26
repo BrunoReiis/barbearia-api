@@ -9,9 +9,41 @@ router.post("/", requireAuth, async (req, res) => {
         return;
     }
     try {
-        const appointmentDate = new Date(`${date}T00:00:00`);
-        if (Number.isNaN(appointmentDate.getTime())) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             res.status(400).json({ message: "Data inválida" });
+            return;
+        }
+        const appointmentDate = new Date(`${date}T00:00:00`);
+        const [dateYear, dateMonth, dateDay] = date.split("-").map(Number);
+        if (Number.isNaN(appointmentDate.getTime()) || appointmentDate.getFullYear() !== dateYear || appointmentDate.getMonth() !== dateMonth - 1 || appointmentDate.getDate() !== dateDay) {
+            res.status(400).json({ message: "Data inválida" });
+            return;
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (appointmentDate <= today) {
+            res.status(400).json({ message: "Só é possível agendar a partir de amanhã" });
+            return;
+        }
+        const [hour, minute] = time.split(":").map(Number);
+        if (!/^\d{2}:\d{2}$/.test(time) || !Number.isInteger(hour) || !Number.isInteger(minute) || minute % 30 !== 0) {
+            res.status(400).json({ message: "Escolha um horário em intervalos de 30 minutos" });
+            return;
+        }
+        const businessHour = await prisma.businessHour.findUnique({
+            where: { dayOfWeek: appointmentDate.getDay() },
+        });
+        if (!businessHour?.enabled) {
+            res.status(400).json({ message: "A barbearia está fechada nesta data" });
+            return;
+        }
+        const [openHour, openMinute] = businessHour.openTime.split(":").map(Number);
+        const [closeHour, closeMinute] = businessHour.closeTime.split(":").map(Number);
+        const requestedMinutes = hour * 60 + minute;
+        const openingMinutes = openHour * 60 + openMinute;
+        const closingMinutes = closeHour * 60 + closeMinute;
+        if (requestedMinutes < openingMinutes || requestedMinutes >= closingMinutes) {
+            res.status(400).json({ message: `Escolha um horário entre ${businessHour.openTime} e ${businessHour.closeTime}` });
             return;
         }
         const conflict = await prisma.appointment.findFirst({

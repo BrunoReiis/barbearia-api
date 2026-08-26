@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
-import { requireAuth } from "../lib/auth.js";
+import { AuthenticatedRequest, requireAuth } from "../lib/auth.js";
 
 const router = Router();
 
@@ -36,7 +36,7 @@ async function ensureCatalog() {
   }
 }
 
-router.get("/", requireAuth, async (_req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     await ensureCatalog();
     const [barbers, services, hours, appointments] = await Promise.all([
@@ -44,7 +44,7 @@ router.get("/", requireAuth, async (_req: Request, res: Response) => {
       prisma.service.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
       prisma.businessHour.findMany({ orderBy: { dayOfWeek: "asc" } }),
       prisma.appointment.findMany({
-        where: { status: { not: "cancelado" } },
+        where: { userId: req.userId, status: { not: "cancelado" } },
         orderBy: [{ date: "asc" }, { time: "asc" }],
         take: 20,
         include: { barber: true, service: true },
