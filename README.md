@@ -9,6 +9,8 @@ API REST da aplicação de barbearia, construída com Express, TypeScript, Prism
 - Login com emissão de token JWT.
 - Consulta do usuário autenticado.
 - Cargo padrão `usuario`.
+- Catálogo de barbeiros, serviços e horários de funcionamento.
+- Criação e consulta dos agendamentos do usuário autenticado.
 
 ## Requisitos
 
@@ -54,6 +56,8 @@ npx prisma migrate dev
 ```
 
 O modelo `User` contém `name`, `email`, `passwordHash`, `role` e `createdAt`. A senha nunca é retornada pela API.
+
+O domínio de agendamento também possui os modelos `Barber`, `Service`, `BusinessHour` e `Appointment`. Ao acessar o dashboard pela primeira vez, um catálogo inicial é criado automaticamente caso a base esteja vazia.
 
 ## Desenvolvimento e produção
 
@@ -108,6 +112,18 @@ Authorization: Bearer <token>
 ### `GET /api/users`
 
 Lista usuários sem expor `passwordHash`.
+
+### `GET /api/dashboard`
+
+Retorna, em uma única resposta autenticada, barbeiros, serviços, horários de funcionamento e os próximos agendamentos.
+
+### `POST /api/appointments`
+
+Cria um agendamento autenticado. Envie `date` no formato `YYYY-MM-DD`, além de `time`, `barberId` e `serviceId`. O endpoint rejeita horários já ocupados pelo mesmo barbeiro.
+
+### `GET /api/appointments/mine`
+
+Lista os agendamentos do usuário autenticado.
 
 ### `GET /`
 
